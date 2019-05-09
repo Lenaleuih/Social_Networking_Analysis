@@ -20,6 +20,7 @@ Without meaningful interpretation of structure there is no added value to a netw
 ## use case and application
 This project builds several social network diagrams (graphs/sociograms) of a school classroom and then analyzing both centrality measures and clusters within the network. 
 
+![Image of D1graph](https://octodex.github.com/images/D1graph.pdf)
 
 ## references
 
