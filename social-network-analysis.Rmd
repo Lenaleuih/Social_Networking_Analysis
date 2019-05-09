@@ -1,0 +1,208 @@
+---
+title: "Social Network Analysis"
+author: "LenaKafka"
+date: "1/26/2019"
+output: html_document
+---
+
+The data were collected by Vickers & Chan from 29 seventh grade students in a school in Victoria, Australia. Students were asked to nominate their classmates on a number of relations including the following three "layers":  
+
+1. Who do you get on with in the class?  
+2. Who are your best friends in the class?  
+3. Who would you prefer to work with?  
+
+You have a data set for each of these questions, please complete the following tasks.
+
+## Data Wrangling
+
+Manipulate each of the data sets so that it is suitable for building a social network using iGraph.
+
+```{r}
+D1<- read.csv("best.friends.csv")
+D2<-read.csv("get.on.with.csv")
+D3<-read.csv("work.with.csv")
+```
+
+## Visualize the Networks
+
+Create a graph for each of the data sets, are the graphs directed or undirected?
+- directed; because the data come from the survey where questions are framed unilaterally
+
+Visualize each of the graphs you have created and color the nodes according to gender. Save pdfs of your graphs in this directory for upload to Github.
+
+```{r}
+#firstly, we need to change the data type of the students.
+D1$layerID<-as.factor(D1$layerID)
+D1$from <-as.factor(D1$from)
+D1$to<-as.factor(D1$to)
+
+#select the variables that are of interest: from to
+D1.2<-dplyr::select(D1, from, to)
+
+# we convert our data into an edge list
+EDGE1<- dplyr::count(D1.2, from, to)
+names(EDGE1)<-c("from","to","count")
+
+#now we need to make the vertex list, a list of all students and their characteristics (i.e. the gender)
+VERT1<-dplyr::select(D1, from, gender.from)
+VERT1<-unique(VERT1)
+names(VERT1)<-c("id","gender")
+
+#now we have both a vertex and edge list, it is time to plot our graph!
+library(igraph)
+#because D1 describes best friends, so it should not be directed
+g1 <- graph.data.frame(EDGE1, directed=TRUE, vertices=VERT1)
+#now wo can plot our graph using the force directed
+plot(g1, layout=layout.fruchterman.reingold, vertex.color = VERT1$gender)
+
+
+#now we can repeat the process above to get graphs for D2
+D2$layerID<-as.factor(D2$layerID)
+D2$from <-as.factor(D2$from)
+D2$to<-as.factor(D2$to)
+D2.2<-dplyr::select(D2, from, to)
+EDGE2<- dplyr::count(D2.2, from, to)
+names(EDGE2)<-c("from","to","count")
+VERT2<-dplyr::select(D2, from, gender.from)
+VERT2<-unique(VERT2)
+names(VERT2)<-c("id","gender")
+g2 <- graph.data.frame(EDGE2, directed=TRUE, vertices=VERT2)
+plot(g2, layout=layout.fruchterman.reingold, vertex.color = VERT2$gender)
+
+#repeat for D3 graph; directed is true here because the willingness to work with someone is not necessarily reciprocal 
+D3$layerID<-as.factor(D3$layerID)
+D3$from <-as.factor(D3$from)
+D3$to<-as.factor(D3$to)
+D3.2<-dplyr::select(D3, from, to)
+EDGE3<- dplyr::count(D3.2, from, to)
+names(EDGE3)<-c("from","to","count")
+VERT3<-dplyr::select(D3, from, gender.from)
+VERT3<-unique(VERT3)
+names(VERT3)<-c("id","gender")
+g3 <- graph.data.frame(EDGE3, directed=TRUE, vertices=VERT3)
+plot(g3, layout=layout.fruchterman.reingold, vertex.color = VERT3$gender, edge.arrow.size=0.5)
+```
+
+## Centrality Measures
+
+Who in the class has the highest degree centrality for each measure?
+```{r}
+#in the case of D1, the best friends
+deg1<- degree(g1, mode = "all")
+which.max(deg1)
+# the student No.21 has the highest degree centrality of 30
+
+#we do the same for D2 and D3
+deg2<- degree(g2, mode = "all")
+which.max(deg2)
+#student no.11 has the highest degree centrality of 42
+
+deg3<- degree(g3, mode = "all")
+which.max(deg3)
+#student no.16 hast the highest degree centrality of 26
+
+```
+
+ **degree centrality** 
+
+  According to the definition; degree centrality tells us how many direct connections each node has to other nodes within the network. For the three networks, this definition has different meanings.In the first network, we can know that which student is the most connected. in the second one, we can know which one is the most popular one. And for the third one this concept actually conveys little information because the question is framed as the wish to work with the student, which does not reflect the connections in reality.
+
+
+Who in the class has the highest closeness centrality:
+
+```{r}
+close1<-closeness(g1, mode="all")
+which.min(close1)
+# student 18 and 25 have the smallest closeness of 0.014
+
+close2<-closeness(g2, mode = "all")
+which.min(close2)
+#student 3 and 7 have the smallest closeness of 0.0204
+
+close3<-closeness(g3, mode = "all")
+which.min(close3)
+# student 18 has the smallest closeness of 0.0135
+
+```
+
+**betweeness centrality** 
+
+Betweenness centrality measures the extent to which a vertex lies on paths between other vertices, while degree centrality depicts the number of links a vertex has to others. They are useful in different scenarios where betweenness makes more sense in revealing the influnece of certain actor has upon others, while the latter more meaningful when we want to measure the popularity of certain actor. Betweenness is more useful in the second network, where we can know that which actor is more influential and can convey information to others in the network.
+
+## Simple structures
+
+Count the number of dyads and the number and type of triads using the following commands.
+```{r}
+dyad_census(g1)
+# g1 has 55 dyads
+dyad_census(g2)
+# g2 has 121 dyads
+dyad_census(g3)
+# g3 has 46 dyads
+```
+[Documentation](http://igraph.org/r/doc/dyad_census.html)
+
+```{r}
+triad_census(g1)
+triad_census(g2)
+triad_census(g3)
+```
+[Documentation](http://igraph.org/r/doc/triad_census.html)
+
+For the dyad part, the number of the dyads formed in the third network(the get-long one) is smaller than the other two, which implies that it is less likely that people can have reciprocal affirmness when it comes to the work.
+From the triad part we can konw that all networks lack in the type 10 and type 14 triads. It suggests that the "love triangle" is not a stable form of relationship. Also, the complete triads are not common in all three networks.
+
+## Cliques
+
+the size of the largest clique(s) in each of the three networks
+
+```{r}
+largest1<- largest_cliques(g1)
+# the largest size is 7
+largest2<-largest_cliques(g2)
+#the largetst size is 12
+largest3<-largest_cliques(g3)
+#the largest size is 9
+```
+
+The nodes/vertices are in the largest cliques for the three networks
+
+```{r}
+member1<-c(8, 11, 27, 15, 13, 24, 23, 20, 14, 19, 22, 21, 26, 16)
+member2<-c(23, 14, 8, 15, 19, 20, 21, 22, 13, 16, 11)
+member3<-c(6, 8, 11, 15, 16, 14, 19, 23, 20, 21, 22)
+
+all_members<-intersect(member1, intersect(member2, member3))
+# 8 11 15 23 20 14 19 22 21 16 are in the largest cliques for all three networks
+```
+
+ **maximal cliques**
+
+```{r}
+maximal.cliques.count(g1)
+#35
+maximal.cliques.count(g2)
+#64
+maximal.cliques.count(g3)
+#36
+
+```
+
+## Components & Cutpoints
+
+cutpoints (articulation points) for each of the three networks: 
+```{r}
+articulation_points(g1)
+#13 
+articulation_points(g2)
+#there's no cutpoint
+articulation_points(g3)
+#13
+```
+
+
+## Putting it all together
+
+
+Analysis: There is a discrepency between students' perception of good friends and the good teammates. Teachers should guide the students to better evaluate others in formal learning scenarios. Also, there is a pattern where students tend to get along with others with the same gender, which might lead to the decision that teacher should better team students up for assignments. At last, teachers should provide extra help for the "cutpoints" student.
+```{r}
